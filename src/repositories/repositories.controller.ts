@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { AddQuestionDto } from './dto/questions.dto';
+import { addAnswerDto, AddQuestionDto } from './dto/questions.dto';
 import { RepositoriesService } from './repositories.service';
 
 @Controller('questions')
@@ -17,17 +17,25 @@ export class RepositoriesController {
   }
 
   @Post()
-  addQuestion(@Body() body: AddQuestionDto) {
+  async addQuestion(@Body() body: AddQuestionDto) {
     return this.repositoriesService.addQuestion(body);
-  };
+  }
 
   @Get('/:questionId/answers')
-  async getAnswers(@Param('questionId') questionId: string) {
+  getAnswers(@Param('questionId') questionId: string) {
     return this.repositoriesService.getAnswers(questionId);
   }
 
+  @Post('/:questionId/answers')
+  async addAnswer(
+    @Param('questionId') questionId: string,
+    @Body() body: addAnswerDto,
+  ) {
+    return this.repositoriesService.addAnswer(questionId, body);
+  }
+
   @Get('/:questionId/answers/:answerId')
-  async getAnswer(
+  getAnswer(
     @Param('questionId') questionId: string,
     @Param('answerId') answerId: string,
   ) {
