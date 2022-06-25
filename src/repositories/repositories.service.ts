@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { FsService } from 'src/fs/fs.service';
 import { AnswerResponseDto, QuestionResponseDto } from './dto/questions.dto';
-const { readFile, writeFile } = require('fs/promises');
 const uuid = require('uuid');
 
 interface AddQuestionParams {
@@ -16,79 +16,61 @@ interface AddAnswerParams {
 
 @Injectable()
 export class RepositoriesService {
+  constructor(private readonly fsService: FsService) {}
 
   async getQuestions(): Promise<QuestionResponseDto[]> {
-    const fileContent = await readFile('questions.json', { encoding: 'utf-8' });
-    const questions = JSON.parse(fileContent);
+    const questions = await this.fsService.getAllData('questions.json');
 
     if(!questions.length) {
-        console.log('!questions.length')
-        // throw new NotFoundException();
-        
+        throw new NotFoundException();
     }
     return questions;
   }
 
   async getQuestionById(id: string): Promise<QuestionResponseDto> {
-    const questions = await this.getQuestions();
-    const question = questions.filter((question) => {
-        if (question.id === id) return question;
-    })
+    const question = await this.fsService.getDataById('questions.json', id);
 
-    if(!question[0]) {
-        console.log('!question[0]');
-        // throw new NotFoundException();
-        
+    if(!question) {
+        throw new NotFoundException();
     }
-    return question[0];
+    return question;
   }
 
   async addQuestion(body: AddQuestionParams) {
-    const questions = await this.getQuestions();
+    const questions = await this.fsService.getAllData('questions.json');
     const newQuestion = {id: uuid.v4(), ...body, answers: []};
     questions.push(newQuestion)   
-    writeFile('questions.json', JSON.stringify(questions), (err) => {
-      if (err) console.error(err)
-    })
-
+    this.fsService.writeData('questions.json', questions);
     return newQuestion;
   }
 
   async getAnswers(id: string): Promise<AnswerResponseDto[]> {
-    const question = await this.getQuestionById(id)
+    const question = await this.fsService.getDataById('questions.json', id);
     return question.answers;
   }
 
   async getAnswer(id: string, answerId: string): Promise<AnswerResponseDto> {
-    const question = await this.getQuestionById(id);
+    const question = await this.fsService.getDataById('questions.json', id);
     const answer = question.answers.filter((answer) => {
         if (answer.id === answerId) return answer;
     })
 
     if(!answer[0]) {
-        console.log('!answer[0]');
-        // throw new NotFoundException();
-        
+        throw new NotFoundException();  
     }
     return answer[0];
   }
 
   async addAnswer(id: string, body: AddAnswerParams) {
-    const updateQuestion = await this.getQuestionById(id);
-    // const updateAnswers = await this.getAnswers(id);
+    const updateQuestion = await this.fsService.getDataById('questions.json', id);
     const newAnswer = {id: uuid.v4(), ...body};
     updateQuestion.answers.push(newAnswer);
-    // updateAnswers.push(newAnswer);
 
-    const questions = await this.getQuestions();
+    const questions = await this.fsService.getAllData('questions.json');
     // remove current question from questions array and then push updateQuestion
     const updateQuestions = questions.filter(question => { return  question.id !== id})
     updateQuestions.push(updateQuestion)  
-
-    // const updateQuestions = questions.find(question => question.id === id).answers = updateAnswers;
-    writeFile('questions.json', JSON.stringify(updateQuestions), (err) => {
-      if (err) console.error(err)
-    })
+    this.fsService.writeData('questions.json', updateQuestions);
     return newAnswer;
   }
 }
