@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FsService } from 'src/fs/fs.service';
+// import { MiddlewareOptions } from 'src/middleware/dto/middleware.dto';
 import { AnswerResponseDto, QuestionResponseDto } from './dto/questions.dto';
 const uuid = require('uuid');
 
@@ -17,10 +18,14 @@ interface AddAnswerParams {
 @Injectable()
 export class RepositoriesService {
   constructor(private readonly fsService: FsService) {}
+  private filepath: string;
+
+  async setFilePath(filepath: string) {
+    this.filepath = filepath;
+  }
 
   async getQuestions(): Promise<QuestionResponseDto[]> {
-    const questions = await this.fsService.getAllData('questions.json');
-
+    const questions = await this.fsService.getAllData(this.filepath);
     if(!questions.length) {
         throw new NotFoundException();
     }
@@ -28,7 +33,7 @@ export class RepositoriesService {
   }
 
   async getQuestionById(id: string): Promise<QuestionResponseDto> {
-    const question = await this.fsService.getDataById('questions.json', id);
+    const question = await this.fsService.getDataById(this.filepath, id);
 
     if(!question) {
         throw new NotFoundException();
@@ -37,20 +42,20 @@ export class RepositoriesService {
   }
 
   async addQuestion(body: AddQuestionParams) {
-    const questions = await this.fsService.getAllData('questions.json');
+    const questions = await this.fsService.getAllData(this.filepath);
     const newQuestion = {id: uuid.v4(), ...body, answers: []};
     questions.push(newQuestion)   
-    this.fsService.writeData('questions.json', questions);
+    this.fsService.writeData(this.filepath, questions);
     return newQuestion;
   }
 
   async getAnswers(id: string): Promise<AnswerResponseDto[]> {
-    const question = await this.fsService.getDataById('questions.json', id);
+    const question = await this.fsService.getDataById(this.filepath, id);
     return question.answers;
   }
 
   async getAnswer(id: string, answerId: string): Promise<AnswerResponseDto> {
-    const question = await this.fsService.getDataById('questions.json', id);
+    const question = await this.fsService.getDataById(this.filepath, id);
     const answer = question.answers.filter((answer) => {
         if (answer.id === answerId) return answer;
     })
@@ -62,15 +67,15 @@ export class RepositoriesService {
   }
 
   async addAnswer(id: string, body: AddAnswerParams) {
-    const updateQuestion = await this.fsService.getDataById('questions.json', id);
+    const updateQuestion = await this.fsService.getDataById(this.filepath, id);
     const newAnswer = {id: uuid.v4(), ...body};
     updateQuestion.answers.push(newAnswer);
 
-    const questions = await this.fsService.getAllData('questions.json');
+    const questions = await this.fsService.getAllData(this.filepath);
     // remove current question from questions array and then push updateQuestion
     const updateQuestions = questions.filter(question => { return  question.id !== id})
     updateQuestions.push(updateQuestion)  
-    this.fsService.writeData('questions.json', updateQuestions);
+    this.fsService.writeData(this.filepath, updateQuestions);
     return newAnswer;
   }
 }

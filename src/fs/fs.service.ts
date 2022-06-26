@@ -1,11 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-const { readFile, writeFile } = require('fs/promises');
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+const { rm, readFile, writeFile } = require('fs/promises');
 
 @Injectable()
 export class FsService {
-  async getAllData(filename: string) {
+
+  async getAllData(filepath: string) {
     const fileContent = await readFile(
-      filename,
+      filepath,
       { encoding: 'utf-8' },
       (err) => {
         if (err) {
@@ -17,9 +18,9 @@ export class FsService {
     return data;
   }
 
-  async getDataById(filename: string, id: string) {
+  async getDataById(filepath: string, id: string) {
     const fileContent = await readFile(
-      filename,
+      filepath,
       { encoding: 'utf-8' },
       (err) => {
         if (err) {
@@ -34,11 +35,15 @@ export class FsService {
     return dataById[0];
   }
 
-  async writeData(filename: string, data: JSON) {
-    writeFile(filename, JSON.stringify(data), (err) => {
+  async writeData(filepath: string, data: JSON) {
+    writeFile(filepath, JSON.stringify(data), (err) => {
       if (err) {
         throw new BadRequestException();
       }
     });
+  }
+
+  async rmFile(filepath: string) {
+    rm(filepath);
   }
 }

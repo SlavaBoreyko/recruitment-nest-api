@@ -7,5 +7,6 @@ import { RepositoriesService } from './repositories.service';
   imports: [FsModule],
   controllers: [RepositoriesController],
   providers: [RepositoriesService],
+  exports: [RepositoriesService],
 })
 export class RepositoriesModule {}
